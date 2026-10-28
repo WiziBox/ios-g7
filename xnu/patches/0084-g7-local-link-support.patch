@@ -1,0 +1,51 @@
+diff --git a/makedefs/MakeInc.kernel b/makedefs/MakeInc.kernel
+--- a/makedefs/MakeInc.kernel
++++ b/makedefs/MakeInc.kernel
+@@ -341,6 +341,7 @@
+ 	$(_v)$(MKDIR) $(dir $@)
+ 	@$(LOG_INSTALL) "$(@F)"
+ 	$(_v)$(INSTALL) $(INSTALL_FLAGS) $< $@
++	$(_v)python3 $(SRCROOT)/tools/g7-capture-link-support.py "$(FAKEROOT_DIR)" "$(SDKROOT)" "$(dir $@)"
+ 
+ $(DSTROOT)/$(INSTALL_KERNEL_DIR)/$(KERNEL_FILE_NAME).link/$(KERNEL_FILE_NAME).linkarguments: $(TARGET)/$(KERNEL_FILE_NAME).link/$(KERNEL_FILE_NAME).linkarguments ALWAYS
+ 	$(_v)$(MKDIR) $(dir $@)
+diff --git a/tools/g7-capture-link-support.py b/tools/g7-capture-link-support.py
+new file mode 100644
+--- /dev/null
++++ b/tools/g7-capture-link-support.py
+@@ -0,0 +1,35 @@
++#!/usr/bin/env python3
++"""Capture the exact link support used by this successful kernel build."""
++from pathlib import Path
++import hashlib
++import json
++import shutil
++import subprocess
++import sys
++
++fakeroot, sdk, out = map(Path, sys.argv[1:])
++if not sdk.is_dir():
++    sdk = Path(subprocess.check_output(['xcrun', '--sdk', str(sdk), '--show-sdk-path'], text=True).strip())
++resource = Path(subprocess.check_output(['xcrun', 'clang', '-print-resource-dir'], text=True).strip())
++candidates = list(sdk.rglob('libcc_kext.a')) + list(resource.rglob('libclang_rt.cc_kext.a'))
++if not candidates:
++    raise SystemExit('Cannot locate compiler kernel support archive')
++sources = [(fakeroot / 'usr/local/lib/kernel/libfirehose_kernel.a', 'libfirehose_kernel.a'),
++           (candidates[0], 'libcc_kext.a')]
++out.mkdir(parents=True, exist_ok=True)
++manifest = {}
++for source, name in sources:
++    if not source.is_file():
++        raise SystemExit(f'Missing link support: {source}')
++    dest = out / name
++    archs = subprocess.check_output(['lipo', '-archs', str(source)], text=True).split()
++    if 'arm64' not in archs:
++        raise SystemExit(f'No plain ARM64 slice in {source}: {archs}')
++    if len(archs) > 1:
++        subprocess.run(['lipo', str(source), '-thin', 'arm64', '-output', str(dest)], check=True)
++    else:
++        shutil.copyfile(source, dest)
++    manifest[name] = {'source': str(source), 'arch': 'arm64',
++                      'sha256': hashlib.sha256(dest.read_bytes()).hexdigest()}
++(out / 'local-link-support.json').write_text(json.dumps(manifest, indent=2) + '\n')
++print('Captured ARM64 Firehose/compiler archives for local kernel relinking')
