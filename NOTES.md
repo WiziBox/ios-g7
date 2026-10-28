@@ -1,5 +1,30 @@
 # iOS 16 on sweet (Redmi Note 10 Pro, SM7150) - working notes
 
+## LG G7 local handoff — 2026-10-28 (read first for this fork)
+
+- Scope: continue through real XNU/iOS boot on LG G7 ThinQ (SDM845), not merely
+  a display demo. Current verification is only the ABL-to-shim stage.
+- Local project: `/home/misty/projects/ios-sweet`; `g7/README.md` records the
+  supported diagnostic build and the remaining porting work.
+- v2 diagnostic built with GCC/binutils; stock gzip+three-DTB container,
+  boot v1 metadata and ARM64 text_offset 0x80000 preserved.
+- Windows `fastboot boot` returned transfer OKAY / Booting OKAY (0.102 s).
+  User confirmed repeated white/black screen, proving actual shim execution.
+- SHA256: b3ba61f2910420cb7fe07360eb074e6003ac706f607f4df228f9b938e64e92a1.
+- Tests passed: four local real DTBs; truncated input, invalid header bounds,
+  changed splash address/name; 1000 mutated DTBs; malformed kernel inputs.
+- No partition flashing or root-image writes performed. Existing Android and
+  backups preserved. Do not confuse upstream Redmi milestone notes below
+  with results on this G7.
+- User requested publishing our work. Fork created from dipa-studio/ios-sweet
+  at https://github.com/WiziBox/ios-g7. Source/durable notes only; no phone
+  dumps, device identifiers, Apple artifacts, or generated binaries in Git.
+- Kernel artifact found: upstream CI run 39158169212, xnu-kernel artifact
+  12147422947 (0081). Download in progress to Windows workspace work/xnu-0081.
+- Next: verify G7 scanout and bootstrap safe RAM; create a dedicated G7 kernel
+  patch/build rather than reusing SWEET fixed physical addresses blindly.
+
+
 ## Agent handoff / active work (2026-10-15, latest)
 
 ### >>> UPDATE 2026-10-18 (read first, then the 10-17 handoff below) <<<

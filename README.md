@@ -1,5 +1,12 @@
 # ios-sweet
 
+## LG G7 fork status
+
+This fork adds an experimental LG G7 ThinQ port. The display diagnostic is
+verified on hardware; XNU/iOS boot is still in progress. See [G7 status and
+build instructions](g7/README.md). The Redmi results below are upstream
+results, not G7 results.
+
 **Apple's iOS 16 running on a Redmi Note 10 Pro.**
 
 This project ports Apple's open-source XNU kernel (xnu-8796, the iOS 16 generation) to the Xiaomi Redmi Note 10 Pro (`sweet`, Qualcomm SM7150 / Snapdragon 732G). On top of it runs the **unmodified iOS 16.7.16 (20H392) userland of the iPhone X**: launchd, the system daemons, backboardd, SpringBoard and the stock apps.

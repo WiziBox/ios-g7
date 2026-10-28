@@ -1,0 +1,6 @@
+/shim/out/
+/board.dtbo
+/live.dtb
+/iomem.txt
+/boot-original-verify/
+__pycache__/
