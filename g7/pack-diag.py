@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Mirror the stock G7 v1 boot header and gzip+DTB kernel container."""
 from pathlib import Path
+import argparse
 import gzip
 import hashlib
 import json
@@ -56,7 +57,14 @@ def verify(boot, image, tail, meta, ramdisk):
     if boot[576:596] != sha.digest(): raise ValueError('Android boot SHA1 mismatch')
 
 def main():
-    out = Path(sys.argv[1]).resolve()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('out', type=Path)
+    parser.add_argument('--name', default='g7-diag-v2-boot')
+    parser.add_argument('--kind', default='display-only diagnostic, not iOS')
+    parser.add_argument('--ramdisk', type=Path)
+    args = parser.parse_args()
+    if '/' in args.name or '\\' in args.name: parser.error('name must be a basename')
+    out = args.out.resolve()
     stock = ROOT / 'dtb/g7/boot_unpacked'
     stock_image, tail = stock_parts((stock / 'kernel').read_bytes())
     meta = dict(line.split(': ', 1) for line in (stock / 'header.txt').read_text().splitlines())
@@ -69,12 +77,12 @@ def main():
     cpio = b'070701' + b''.join(f'{v:08x}'.encode() for v in
         (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 11, 0)) + b'TRAILER!!!\0'
     cpio += b'\0' * (-len(cpio) % 4)
-    ramdisk = gzip.compress(cpio, mtime=0)
+    ramdisk = args.ramdisk.read_bytes() if args.ramdisk else gzip.compress(cpio, mtime=0)
     (out / 'ramdisk.cpio.gz').write_bytes(ramdisk)
     osv = int(meta['os_version'], 0)
     os_version = '.'.join(str((osv >> shift) & 127) for shift in (25, 18, 11))
     patch = f'{2000 + ((osv >> 4) & 127):04d}-{osv & 15:02d}'
-    destination = out / 'g7-diag-v2-boot.img'
+    destination = out / (args.name + '.img')
     subprocess.run([sys.executable, str(ROOT / 'g7/tools/mkbootimg'), '--header_version', '1',
         '--kernel', str(out / 'Image.gz-dtb'), '--ramdisk', str(out / 'ramdisk.cpio.gz'),
         '--base', '0', '--kernel_offset', meta['kernel_addr'],
@@ -83,7 +91,7 @@ def main():
         '--os_patch_level', patch, '--cmdline', meta['cmdline'],
         '-o', str(destination)], check=True)
     verify(destination.read_bytes(), image, tail, meta, ramdisk)
-    report = {'image': destination.name, 'kind': 'display-only diagnostic, not iOS',
+    report = {'image': destination.name, 'kind': args.kind,
               'sha256': hashlib.sha256(destination.read_bytes()).hexdigest(),
               'stock_dtbs_preserved': 3, 'arm64_text_offset': hex(struct.unpack_from('<Q', image, 8)[0]),
               'boot_header_version': 1, 'verified': True}

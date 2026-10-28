@@ -20,9 +20,21 @@
   at https://github.com/WiziBox/ios-g7. Source/durable notes only; no phone
   dumps, device identifiers, Apple artifacts, or generated binaries in Git.
 - Kernel artifact found: upstream CI run 39158169212, xnu-kernel artifact
-  12147422947 (0081). Download in progress to Windows workspace work/xnu-0081.
-- Next: verify G7 scanout and bootstrap safe RAM; create a dedicated G7 kernel
-  patch/build rather than reusing SWEET fixed physical addresses blindly.
+  12147422947 (0081). Downloaded to Windows workspace work/xnu-0081; use as reference only,
+  not as the G7 kernel (its bootstrap addresses are still SWEET).
+- Text diagnostic v3 also temporarily booted OKAY; user confirmed 5760-byte
+  pitch is readable. 5888 is not the working pitch. Black/white does not
+  establish channel order. This confirms an address/geometry suitable for
+  subsequent early-console tests.
+- G7 ADT now selects one CPU, no UFS node, and 32-MiB-aligned RAM at
+  0xb4000000 for 0x4a000000 bytes (last 1 MiB is the panic log). Local G7
+  iomem/FDT show this subset clear of fixed reservations.
+- Added kernel patch 0082 for early G7 console plus two bootstrap framebuffer
+  blocks (9c000000 and 9e000000), and removed SWEET input/USB probe calls.
+  Configuration was checked against exact Apple xnu-8796.141.3 with the
+  complete 0001..0081 project patch series applied.
+- Next: build patched kernel using the inherited xnu workflow; finish a
+  bounded G7 payload loader; verify XNU on hardware before root/userland.
 
 
 ## Agent handoff / active work (2026-10-15, latest)

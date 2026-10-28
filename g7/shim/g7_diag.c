@@ -1,5 +1,8 @@
 #include <stdint.h>
 #include "splash.h"
+#ifdef G7_TEXT_DIAG
+#include "console.h"
+#endif
 
 /* A display-only entry diagnostic: no UFS/GIC/PSCI/partition operations.
  * Whole-region monochrome needs no unverified pixel format or scanout stride.
@@ -41,6 +44,31 @@ void shim_main(uint64_t dtb)
     if (((uintptr_t)_head < base + size && (uintptr_t)_end > base) ||
         (dtb < base + size && dtb + 0x200000 > base)) goto halt;
     g7_diag.stage = 2;
+#ifdef G7_TEXT_DIAG
+    for (unsigned frame = 0; ; ++frame) {
+        volatile uint32_t *all = (volatile uint32_t *)(uintptr_t)base;
+        for (uint64_t i = 0; i < size / 4; ++i) all[i] = 0xff000000U;
+        con_stride = (frame & 1) ? 5888 : 5760;
+        uint64_t span = (uint64_t)con_stride * FB_H;
+        uint64_t step = (span + 4095) & ~4095ULL;
+        for (uint64_t offset = 0; offset + span <= size; offset += step) {
+            con_fb = (volatile uint32_t *)(uintptr_t)(base + offset);
+            con_clear(0xff000000U);
+            con_str("G7", "TEXT DIAGNOSTIC V3");
+            con_str("PITCH", (frame & 1) ? "5888" : "5760");
+            con_hex("EL", g7_diag.current_el);
+            con_hex("MPIDR", g7_diag.mpidr);
+            con_hex("MIDR", g7_diag.midr);
+            con_hex("MMFR0", g7_diag.mmfr0);
+            con_hex("CNTFRQ", g7_diag.cntfrq);
+            con_hex("DTB", dtb);
+            con_hex("SCTLR", READ("sctlr_el1"));
+            con_str("STATUS", "SHIM RUNNING - NO XNU YET");
+        }
+        __asm__ volatile("dsb sy" ::: "memory");
+        for (int seconds = 0; seconds < 8; ++seconds) wait_second();
+    }
+#endif
     for (unsigned frame = 0; ; ++frame) {
         volatile uint32_t *pixels = (volatile uint32_t *)(uintptr_t)base;
         uint32_t color = frame & 1 ? 0xff000000U : 0xffffffffU;

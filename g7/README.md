@@ -58,14 +58,23 @@ volume down to recover if needed, then select the usual boot mode.
 
 ## Remaining work toward iOS
 
-1. Establish G7 scanout stride/format and show readable shim diagnostics.
-2. Build a G7 XNU payload: replace SWEET early hardcoded framebuffer addresses,
+1. G7 text diagnostic verified: 1440x3120 with 5760-byte pitch is readable.
+   Channel order remains unverified; black/white text does not establish it.
+2. Build a G7 XNU payload (in progress): replace SWEET early hardcoded framebuffer addresses,
    choose RAM from the real G7 map (SWEET default `0xb0000000` overlaps G7
    persistent RAM), and start with one CPU and no storage/touch drivers.
 3. Verify XNU early boot and root-device detection before preparing userland.
 4. Prepare and validate a compatible iOS root image; any destructive device
    partition operation requires separate user confirmation per `AGENTS.md`.
 
-The other copied SWEET shim sources and `mkadt-g7.py` are incomplete porting
-references. They are not used by the supported diagnostic build and are not
-a validated G7 XNU configuration.
+`mkadt-g7.py` now builds an early G7 tree with one CPU, no UFS node, and
+RAM `0xb4000000..0xfe000000` (top 1 MiB reserved for panic logs). Kernel patch
+`0082-g7-bootstrap-display.patch` maps both 32 MiB blocks crossed by the G7
+splash buffer and adjusts the early console. The inherited `xnu` Actions
+workflow builds this patch; the output retains the SWEET kernel filename
+because it reuses that machine configuration. This kernel is not yet
+verified on the G7. `configure-xnu.py` can reproduce the patch on an upstream
+tree after patches 0001..0081; do not run it after patch 0082.
+
+The copied full SWEET shim sources remain incomplete porting references.
+The supported default build still makes only the diagnostic.
