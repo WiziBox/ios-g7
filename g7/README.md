@@ -78,3 +78,28 @@ tree after patches 0001..0081; do not run it after patch 0082.
 
 The copied full SWEET shim sources remain incomplete porting references.
 The supported default build still makes only the diagnostic.
+
+
+## XNU loader (early bring-up, no root filesystem yet)
+
+The loader checks every segment before any kernel writes, forbids overlap
+with the shim/FDT/initrd, requires the G7 RAM configuration, and reports
+exceptions on screen. The actual C validator is exercised with 29 negative
+cases plus valid generated and real payloads:
+
+~~~sh
+python3 g7/tests/test_payload.py
+bash g7/build-xnu-boot.sh G7_KERNEL
+~~~
+
+It refuses an arm64e kernel or a kernel without the retained G7 arm_init
+marker. For validating the loader with a reference kernel without executing it:
+
+~~~sh
+bash g7/build-xnu-boot.sh --stage-only REFERENCE_KERNEL
+~~~
+
+The stage-only image was verified on hardware: STOP displayed
+STAGED ONLY; XNU NOT EXECUTED. Patch 0083 additionally maps both final
+TTBR1 framebuffer blocks and relocates the console by the G7's 20-MiB
+offset into the first block. Actual XNU execution is not yet verified.

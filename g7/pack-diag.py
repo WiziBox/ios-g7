@@ -43,6 +43,9 @@ def verify(boot, image, tail, meta, ramdisk):
     if page != 4096 or version != 1: raise ValueError('Expected G7 boot v1')
     if struct.unpack_from('<I', boot, 1644)[0] != 1648:
         raise ValueError('Bad v1 header size')
+    cmdline = boot[64:576].split(b'\0')[0] + boot[608:1632].split(b'\0')[0]
+    if cmdline.decode() != meta['cmdline'] or rs != len(ramdisk):
+        raise ValueError('Stock command line or ramdisk size mismatch')
     kernel = boot[page:page+ks]
     restored, dtbs = stock_parts(kernel)
     if restored != image or dtbs != tail: raise ValueError('Kernel round-trip failed')

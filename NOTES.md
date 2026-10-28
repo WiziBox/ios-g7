@@ -33,8 +33,18 @@
   blocks (9c000000 and 9e000000), and removed SWEET input/USB probe calls.
   Configuration was checked against exact Apple xnu-8796.141.3 with the
   complete 0001..0081 project patch series applied.
-- Next: build patched kernel using the inherited xnu workflow; finish a
-  bounded G7 payload loader; verify XNU on hardware before root/userland.
+- G7 kernel run 40709203797 (commit 2cd9e0c) succeeded; log confirms 0082
+  applied. Its initial-console string was optimized away, so checking that
+  literal was an unsuitable binary gate. No kernel from this run was executed.
+- Found upstream final framebuffer alias still targeted the first 32 MiB
+  block at 9c000000 without the G7 +0x01400000 offset or second block. Patch
+  0083 fixes both and adds a retained G7-specific arm_init label for verification.
+- Bounded G7 payload loader now compiles and has 29 malformed/bounds tests.
+  Device stage-only test: transfer/Booting OKAY; user confirmed STOP =
+  STAGED ONLY; XNU NOT EXECUTED. Thus segments/ADT/boot_args were prepared on
+  actual G7 RAM without executing the upstream SWEET kernel or touching UFS.
+- Next: build kernel with 0083; verify artifact hash/G7 marker and run the real
+  G7 kernel using the proven staging path; inspect its early log.
 
 
 ## Agent handoff / active work (2026-10-15, latest)

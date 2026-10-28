@@ -40,6 +40,9 @@ edit('bsd/dev/sweet_ufs.c', [
     ('\tsweet_touch_init();', '\t/* G7 bring-up: SWEET touch hardware is not used. */', 1),
     ('\tsweet_usb_probe();', '\t/* G7 bring-up: SWEET USB/PHY registers are not used. */', 1),
 ])
+edit('osfmk/arm64/arm_vm_init.c', [('\tassert(va + ARM_TT_L2_SIZE <= gVirtBase);', '\tassert(va + 2 * ARM_TT_L2_SIZE <= gVirtBase);', 1), ('\tassert(*slot == ARM_TTE_EMPTY);', '\tassert(*slot == ARM_TTE_EMPTY && slot[1] == ARM_TTE_EMPTY);', 1), ('\t__asm__ volatile("dsb ishst" ::: "memory");\n}\n#endif\n\nvoid\narm_vm_init', '\tslot[1] = 0x9e000000ULL | ARM_TTE_VALID | ARM_TTE_TYPE_BLOCK |\n\t    ARM_TTE_BLOCK_SH(SH_OUTER_MEMORY) |\n\t    ARM_TTE_BLOCK_ATTRINDX(CACHE_ATTRINDX_WRITECOMB) |\n\t    ARM_TTE_BLOCK_AF | ARM_TTE_BLOCK_PNX | ARM_TTE_BLOCK_NX;\n\t__asm__ volatile("dsb ishst" ::: "memory");\n}\n#endif\n\nvoid\narm_vm_init', 1), ('sweet_early_relocate(SWEET_EARLY_FB_VA);', 'sweet_early_relocate(SWEET_EARLY_FB_VA + 0x01400000ULL);', 1)])
+edit('osfmk/arm/arm_init.c', [('"arm_init entered (MMU on)"', '"G7 arm_init entered (MMU on)"', 1)])
+
 for path, text in pending:
     path.write_text(text)
 print(json.dumps({'target': 'LG G7 ThinQ', 'xnu': '8796.141.3',
